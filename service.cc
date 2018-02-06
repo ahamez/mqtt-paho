@@ -81,8 +81,8 @@ main(int argc, char** argv)
           // is required to not trigger the timeout.
           // https://www.hivemq.com/blog/mqtt-essentials-part-10-alive-client-take-over.
           cli.publish(mqtt::make_message(
-            "ping",
-            std::string{""},
+            "s/ping",
+            std::string{"pong"},
             qos1,
             unretained
           ));

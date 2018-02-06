@@ -1,0 +1,26 @@
+A small reminder to test bridges with mosquitto.
+
+* Bridge configuration
+
+File: `mosquitto_bridge.conf`.
+Important part to configure:
+
+  connection bridge
+  address 192.168.1.14:1883
+  topic d/# out 1
+  topic d/# in 1
+  topic s/ping in 1
+
+
+* Launch
+
+  # Main broker (listen on 1883):
+  mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
+  # Bridge broker (listen on 1884):
+  moquitto -c mosquitto_bridge.conf
+  ./device 1 tcp://localhost:1883
+  ./service 100 tcp://localhost:1884
+  mosquitto_sub -h 127.0.0.1 -p 1883 -t 's/#'
+  # The following should not display anything as the bridge doesn't
+  # forward topics s/#
+  mosquitto_sub -h 127.0.0.1 -p 1884 -t 's/#'

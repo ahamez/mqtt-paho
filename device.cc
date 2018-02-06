@@ -12,12 +12,16 @@ main(int argc, char** argv)
 {
   using namespace std::chrono_literals;
 
-  if (argc != 2)
+  if (argc < 2)
   {
-    std::cerr << argv[0] << " ID\n";
+    std::cerr << argv[0] << " ID [BROKER]\n";
     return 1;
   }
   const auto id = argv[1];
+  const auto address = argc >= 3
+                     ? argv[2]
+                     : "tcp://localhost:1883";
+
   const auto topic = std::string{"d/"} + std::string{id};
 
   mqtt::client cli{address, id};

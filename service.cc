@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <mqtt/client.h>
 
@@ -95,6 +96,7 @@ main(int argc, char** argv)
     catch (const mqtt::exception& e)
     {
       std::cerr << "Error: " << e.what() << " [" << e.get_reason_code() << "]\n";
+      std::this_thread::sleep_for(1s);
     }
   }
 

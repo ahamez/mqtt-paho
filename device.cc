@@ -36,6 +36,9 @@ main(int argc, char** argv)
     retained
   });
 
+  std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
+  cli.set_timeout(6s);
+
   while (true)
   {
     try

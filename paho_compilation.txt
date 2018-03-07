@@ -1,0 +1,25 @@
+macOS
+=====
+
+OpenSSL
+- brew install openssl
+
+paho.mqtt.c
+- wget https://github.com/eclipse/paho.mqtt.c/archive/v1.2.0.tar.gz
+- tar xzf v1.2.0.tar.gz
+- cd paho.mqtt.c-1.2.0
+- mkdir build
+- cd build
+- cmake .. -DPAHO_WITH_SSL=1
+- make -j
+- make install
+
+paho.mqtt.cpp
+- wget https://github.com/eclipse/paho.mqtt.cpp/archive/v1.0.0.tar.gz
+- tar xzf v1.0.0.tar.gz
+- cd paho.mqtt.cpp-1.0.0
+- mkdir build
+- cd build
+- cmake .. -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DPAHO_MQTT_C_PATH=/usr/local
+- make -j
+- make install

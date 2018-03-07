@@ -39,8 +39,14 @@ main(int argc, char** argv)
   const auto address = argc >= 3
                      ? argv[2]
                      : "tcp://localhost:1883";
+  const auto root_crt = argc >= 4
+                      ? argv[3]
+                      : "./root.crt";
 
   mqtt::client cli{address, id};
+
+  auto ssl_opts = mqtt::ssl_options{};
+  ssl_opts.set_trust_store(root_crt);
 
   auto cbk = callback{};
   cli.set_callback(cbk);
@@ -49,6 +55,8 @@ main(int argc, char** argv)
   connection_options.set_keep_alive_interval(3);
   connection_options.set_clean_session(false);
   // connection_options.set_clean_session(true);
+
+  connection_options.set_ssl(ssl_opts);
 
   std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
   cli.set_timeout(6s);

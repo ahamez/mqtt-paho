@@ -47,6 +47,7 @@ main(int argc, char** argv)
 
   auto ssl_opts = mqtt::ssl_options{};
   ssl_opts.set_trust_store(root_crt);
+  ssl_opts.set_enable_server_cert_auth(false);
 
   auto cbk = callback{};
   cli.set_callback(cbk);

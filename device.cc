@@ -2,6 +2,9 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <vector>
+
+#include <cxxopts.hpp>
 
 #include <mqtt/client.h>
 
@@ -12,28 +15,55 @@ main(int argc, char** argv)
 {
   using namespace std::chrono_literals;
 
-  if (argc < 2)
+  auto verify_server = false;
+  auto id = std::string{};
+  auto address = std::string{};
+
+  auto options = cxxopts::Options{argv[0]};
+  options.add_options()
+    ("help", "Help")
+    ("id", "Identifier", cxxopts::value<std::string>(id))
+    ("address", "Server address", cxxopts::value<std::string>(address))
+    ("verify-server", "Use TLS", cxxopts::value<bool>(verify_server))
+    ("crt", "Server certificate", cxxopts::value<std::string>())
+    ("user", "User", cxxopts::value<std::string>())
+    ("password", "Password", cxxopts::value<std::string>())
+    ;
+
+  options.parse_positional({"id", "address"});
+  auto args = options.parse(argc, argv);
+
+  if (args.count("help"))
   {
-    std::cerr << argv[0] << " ID [BROKER]\n";
-    return 1;
+    std::cout << options.help({""}) << '\n';
+    return 0;
   }
-  const auto id = argv[1];
-  const auto address = argc >= 3
-                     ? argv[2]
-                     : "tcp://localhost:1883";
-  const auto root_crt = argc >= 4
-                      ? argv[3]
-                      : "./root.crt";
-
-  const auto topic = std::string{"d/"} + std::string{id};
-
-  mqtt::client cli{address, id};
-
-  auto ssl_opts = mqtt::ssl_options{};
-  ssl_opts.set_trust_store(root_crt);
-  ssl_opts.set_enable_server_cert_auth(false);
 
   auto connection_options = mqtt::connect_options{};
+  auto ssl_opts = mqtt::ssl_options{};
+  ssl_opts.set_trust_store(args["crt"].as<std::string>());
+  ssl_opts.set_enable_server_cert_auth(verify_server);
+  connection_options.set_ssl(ssl_opts);
+  if (args.count("user"))
+  {
+    connection_options.set_user_name(args["user"].as<std::string>());
+  }
+  if (args.count("password"))
+  {
+    connection_options.set_password(args["password"].as<std::string>());
+  }
+
+  const auto topic = std::string{"d/"} + id;
+
+  std::cout
+    << "Identifer: " << id << '\n'
+    << "Address: " << address << '\n'
+    << "Certificate: " << args["crt"].as<std::string>() << '\n'
+    << "Topic: " << topic << '\n'
+    << "Verify server: " << std::boolalpha << verify_server << '\n'
+    << '\n'
+    ;
+
   connection_options.set_keep_alive_interval(2);
   connection_options.set_clean_session(true);
   connection_options.set_will(mqtt::will_options{
@@ -42,9 +72,8 @@ main(int argc, char** argv)
     qos1,
     retained
   });
-  connection_options.set_ssl(ssl_opts);
 
-  std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
+  mqtt::client cli{address, id};
   cli.set_timeout(6s);
 
   while (true)

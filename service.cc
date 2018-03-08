@@ -3,6 +3,8 @@
 #include <string>
 #include <thread>
 
+#include <cxxopts.hpp>
+
 #include <mqtt/client.h>
 
 #include "common.hh"
@@ -30,36 +32,98 @@ main(int argc, char** argv)
 {
   using namespace std::chrono_literals;
 
-  if (argc < 2)
+  // if (argc < 2)
+  // {
+  //   std::cerr << argv[0] << " ID [BROKER]\n";
+  //   return 1;
+  // }
+  // const auto id = argv[1];
+  // const auto address = argc >= 3
+  //                    ? argv[2]
+  //                    : "tcp://localhost:1883";
+  // const auto root_crt = argc >= 4
+  //                     ? argv[3]
+  //                     : "./root.crt";
+
+  // mqtt::client cli{address, id};
+
+  // auto ssl_opts = mqtt::ssl_options{};
+  // ssl_opts.set_trust_store(root_crt);
+  // ssl_opts.set_enable_server_cert_auth(false);
+
+
+  // auto connection_options = mqtt::connect_options{};
+  // connection_options.set_keep_alive_interval(3);
+  // connection_options.set_clean_session(false);
+  // // connection_options.set_clean_session(true);
+  // connection_options.set_user_name("guest");
+  // connection_options.set_password("Z2J7NNChYy");
+  // connection_options.set_ssl(ssl_opts);
+
+  // std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
+  // cli.set_timeout(6s);
+
+  auto verify_server = false;
+  auto id = std::string{};
+  auto address = std::string{};
+
+  auto options = cxxopts::Options{argv[0]};
+  options.add_options()
+    ("help", "Help")
+    ("id", "Identifier", cxxopts::value<std::string>(id))
+    ("address", "Server address", cxxopts::value<std::string>(address))
+    ("verify-server", "Use TLS", cxxopts::value<bool>(verify_server))
+    ("crt", "Server certificate", cxxopts::value<std::string>())
+    ("user", "User", cxxopts::value<std::string>())
+    ("password", "Password", cxxopts::value<std::string>())
+    ;
+
+  options.parse_positional({"id", "address"});
+  auto args = options.parse(argc, argv);
+
+  if (args.count("help"))
   {
-    std::cerr << argv[0] << " ID [BROKER]\n";
-    return 1;
+    std::cout << options.help({""}) << '\n';
+    return 0;
   }
-  const auto id = argv[1];
-  const auto address = argc >= 3
-                     ? argv[2]
-                     : "tcp://localhost:1883";
-  const auto root_crt = argc >= 4
-                      ? argv[3]
-                      : "./root.crt";
-
-  mqtt::client cli{address, id};
-
-  auto ssl_opts = mqtt::ssl_options{};
-  ssl_opts.set_trust_store(root_crt);
-  ssl_opts.set_enable_server_cert_auth(false);
-
-  auto cbk = callback{};
-  cli.set_callback(cbk);
 
   auto connection_options = mqtt::connect_options{};
-  connection_options.set_keep_alive_interval(3);
-  connection_options.set_clean_session(false);
-  // connection_options.set_clean_session(true);
-
+  auto ssl_opts = mqtt::ssl_options{};
+  ssl_opts.set_trust_store(args["crt"].as<std::string>());
+  ssl_opts.set_enable_server_cert_auth(verify_server);
   connection_options.set_ssl(ssl_opts);
+  if (args.count("user"))
+  {
+    connection_options.set_user_name(args["user"].as<std::string>());
+  }
+  if (args.count("password"))
+  {
+    connection_options.set_password(args["password"].as<std::string>());
+  }
 
-  std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
+  const auto topic = std::string{"s/"} + id;
+
+  std::cout
+    << "Identifer: " << id << '\n'
+    << "Address: " << address << '\n'
+    << "Certificate: " << args["crt"].as<std::string>() << '\n'
+    << "Topic: " << topic << '\n'
+    << "Verify server: " << std::boolalpha << verify_server << '\n'
+    << '\n'
+    ;
+
+  connection_options.set_keep_alive_interval(2);
+  connection_options.set_clean_session(true);
+  connection_options.set_will(mqtt::will_options{
+    topic + "/status",
+    std::string{"offline"},
+    qos1,
+    retained
+  });
+
+  mqtt::client cli{address, id};
+  auto cbk = callback{};
+  cli.set_callback(cbk);
   cli.set_timeout(6s);
 
   while (true)
@@ -68,6 +132,13 @@ main(int argc, char** argv)
     {
       cli.connect(connection_options);
       cli.subscribe(std::string{"d/#"});
+
+      cli.publish(mqtt::make_message(
+        topic + "/status",
+        std::string{"online"},
+        qos1,
+        retained
+      ));
 
       while (true)
       {

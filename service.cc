@@ -89,7 +89,10 @@ main(int argc, char** argv)
 
   auto connection_options = mqtt::connect_options{};
   auto ssl_opts = mqtt::ssl_options{};
-  ssl_opts.set_trust_store(args["crt"].as<std::string>());
+  if (args.count("crt"))
+  {
+    ssl_opts.set_trust_store(args["crt"].as<std::string>());
+  }
   ssl_opts.set_enable_server_cert_auth(verify_server);
   connection_options.set_ssl(ssl_opts);
   if (args.count("user"))
@@ -106,7 +109,7 @@ main(int argc, char** argv)
   std::cout
     << "Identifer: " << id << '\n'
     << "Address: " << address << '\n'
-    << "Certificate: " << args["crt"].as<std::string>() << '\n'
+    << "Certificate: " << (args.count("crt") ? args["crt"].as<std::string>() : "N/A") << '\n'
     << "Topic: " << topic << '\n'
     << "Verify server: " << std::boolalpha << verify_server << '\n'
     << '\n'

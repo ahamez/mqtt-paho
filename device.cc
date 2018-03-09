@@ -18,16 +18,24 @@ main(int argc, char** argv)
   auto verify_server = false;
   auto id = std::string{};
   auto address = std::string{};
+  auto payload_size = 0;
+  auto period = 0;
 
   auto options = cxxopts::Options{argv[0]};
+  options
+    .positional_help("id address")
+    .show_positional_help();
+
   options.add_options()
     ("help", "Help")
     ("id", "Identifier", cxxopts::value<std::string>(id))
     ("address", "Server address", cxxopts::value<std::string>(address))
-    ("verify-server", "Use TLS", cxxopts::value<bool>(verify_server))
+    ("verify-server", "Use TLS", cxxopts::value<bool>(verify_server)->default_value("true"))
     ("crt", "Server certificate", cxxopts::value<std::string>())
     ("user", "User", cxxopts::value<std::string>())
     ("password", "Password", cxxopts::value<std::string>())
+    ("payload-size", "Payload size", cxxopts::value<int>(payload_size)->default_value("20480"))
+    ("period", "Period (ms)", cxxopts::value<int>(period)->default_value("1000"))
     ;
 
   options.parse_positional({"id", "address"});
@@ -79,6 +87,8 @@ main(int argc, char** argv)
   mqtt::client cli{address, id};
   cli.set_timeout(6s);
 
+  auto payload = std::string(payload_size, 'x');
+
   while (true)
   {
     try
@@ -103,13 +113,12 @@ main(int argc, char** argv)
       {
         cli.publish(mqtt::make_message(
           topic,
-          std::to_string(i),
+          payload,
           qos0,
           unretained
         ));
 
-        std::cout << "Published " << i << " on " << topic << '\n';
-        std::this_thread::sleep_for(1s);
+        std::this_thread::sleep_for(std::chrono::milliseconds{period});
 
         if (i % 10 == 0)
         {

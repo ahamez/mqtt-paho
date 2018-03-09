@@ -1,4 +1,4 @@
-A small reminder to test bridges with mosquitto.
+A small reminder on how to test bridges with mosquitto.
 
 * Bridge configuration
 

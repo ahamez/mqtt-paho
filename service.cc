@@ -32,37 +32,6 @@ main(int argc, char** argv)
 {
   using namespace std::chrono_literals;
 
-  // if (argc < 2)
-  // {
-  //   std::cerr << argv[0] << " ID [BROKER]\n";
-  //   return 1;
-  // }
-  // const auto id = argv[1];
-  // const auto address = argc >= 3
-  //                    ? argv[2]
-  //                    : "tcp://localhost:1883";
-  // const auto root_crt = argc >= 4
-  //                     ? argv[3]
-  //                     : "./root.crt";
-
-  // mqtt::client cli{address, id};
-
-  // auto ssl_opts = mqtt::ssl_options{};
-  // ssl_opts.set_trust_store(root_crt);
-  // ssl_opts.set_enable_server_cert_auth(false);
-
-
-  // auto connection_options = mqtt::connect_options{};
-  // connection_options.set_keep_alive_interval(3);
-  // connection_options.set_clean_session(false);
-  // // connection_options.set_clean_session(true);
-  // connection_options.set_user_name("guest");
-  // connection_options.set_password("Z2J7NNChYy");
-  // connection_options.set_ssl(ssl_opts);
-
-  // std::cout << "Action default timeout " << cli.get_timeout().count() << " ms\n";
-  // cli.set_timeout(6s);
-
   auto verify_server = false;
   auto id = std::string{};
   auto address = std::string{};

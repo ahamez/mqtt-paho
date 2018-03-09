@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -109,8 +110,13 @@ main(int argc, char** argv)
         unretained
       ));
 
-      for (auto i = 0ul;; ++i)
+      for (auto i = std::uint32_t{0};; ++i)
       {
+        for (auto c = 0; c < 4; ++c)
+        {
+          payload[c] = reinterpret_cast<char*>(&i)[c];
+        }
+
         cli.publish(mqtt::make_message(
           topic,
           payload,

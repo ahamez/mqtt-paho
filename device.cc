@@ -134,7 +134,6 @@ main(int argc, char** argv)
             qos1,
             retained
           ));
-          std::cout << "Published " << i << "! on " << topic << "/!\n";
         }
       }
     }

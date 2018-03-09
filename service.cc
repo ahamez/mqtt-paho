@@ -50,6 +50,10 @@ main(int argc, char** argv)
   auto address = std::string{};
 
   auto options = cxxopts::Options{argv[0]};
+  options
+    .positional_help("ID ADDRESS TOPIC [TOPIC...]")
+    .show_positional_help();
+
   options.add_options()
     ("help", "Help")
     ("id", "Identifier", cxxopts::value<std::string>(id))
@@ -58,9 +62,10 @@ main(int argc, char** argv)
     ("crt", "Server certificate", cxxopts::value<std::string>())
     ("user", "User", cxxopts::value<std::string>())
     ("password", "Password", cxxopts::value<std::string>())
+    ("topics", "Topics to subscribe to", cxxopts::value<std::vector<std::string>>())
     ;
 
-  options.parse_positional({"id", "address"});
+  options.parse_positional({"id", "address", "topics"});
   auto args = options.parse(argc, argv);
 
   if (args.count("help"))
@@ -87,6 +92,17 @@ main(int argc, char** argv)
   }
 
   const auto topic = std::string{"s/"} + id;
+  const auto subscribed_topics = [&]
+  {
+    if (args.count("topics"))
+    {
+      return args["topics"].template as<std::vector<std::string>>();
+    }
+    else
+    {
+      return std::vector<std::string>{};
+    }
+  }();
 
   std::cout
     << "Identifer: " << id << '\n'
@@ -94,8 +110,13 @@ main(int argc, char** argv)
     << "Certificate: " << (args.count("crt") ? args["crt"].as<std::string>() : "N/A") << '\n'
     << "Topic: " << topic << '\n'
     << "Verify server: " << std::boolalpha << verify_server << '\n'
-    << '\n'
-    ;
+    << "Subscribed topics:";
+
+  for (const auto& topic : subscribed_topics)
+  {
+    std::cout << " " << topic;
+  }
+  std::cout << "\n\n";
 
   connection_options.set_keep_alive_interval(10);
   connection_options.set_clean_session(true);
@@ -116,7 +137,10 @@ main(int argc, char** argv)
     try
     {
       cli.connect(connection_options);
-      cli.subscribe(std::string{"d/#"});
+      for (const auto& topic : subscribed_topics)
+      {
+        cli.subscribe(topic);
+      }
 
       cli.publish(mqtt::make_message(
         topic + "/status",

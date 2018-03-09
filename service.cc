@@ -84,7 +84,7 @@ main(int argc, char** argv)
     << '\n'
     ;
 
-  connection_options.set_keep_alive_interval(2);
+  connection_options.set_keep_alive_interval(10);
   connection_options.set_clean_session(true);
   connection_options.set_will(mqtt::will_options{
     topic + "/status",

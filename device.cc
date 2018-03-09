@@ -107,7 +107,7 @@ main(int argc, char** argv)
         topic + "/info",
         std::string{"some infos"},
         qos1,
-        unretained
+        retained
       ));
 
       for (auto i = std::uint32_t{0};; ++i)
@@ -126,13 +126,13 @@ main(int argc, char** argv)
 
         std::this_thread::sleep_for(std::chrono::milliseconds{period});
 
-        if (i % 10 == 0)
+        if (i % 100 == 0)
         {
           cli.publish(mqtt::make_message(
             topic + "/!",
             std::to_string(i) + "!",
             qos1,
-            retained
+            unretained
           ));
         }
       }

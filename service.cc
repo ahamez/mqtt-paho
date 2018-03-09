@@ -119,10 +119,19 @@ main(int argc, char** argv)
         {
           if (msg)
           {
+            const auto i = [&]{
+              auto i = std::uint32_t{0};
+              for (auto c = 0; c < 4; ++c)
+              {
+                reinterpret_cast<char*>(&i)[c] = msg->get_payload_str()[c];
+              }
+              return i;
+            }();
+
             std::cout
               << msg->get_topic() << " -> "
-              << msg->get_payload_str()
-              << "[qos=" << msg->get_qos()
+              << i
+              << " [qos=" << msg->get_qos()
               << ", retained=" << std::boolalpha << msg->is_retained()
               << "]\n";
           }

@@ -27,6 +27,19 @@ struct callback
   }
 };
 
+bool
+ends_with(const std::string& full, const std::string& ending)
+{
+  if (full.length() >= ending.length())
+  {
+    return (full.compare(full.length() - ending.length(), ending.length(), ending) == 0);
+  }
+  else
+  {
+    return false;
+  }
+}
+
 int
 main(int argc, char** argv)
 {
@@ -119,18 +132,26 @@ main(int argc, char** argv)
         {
           if (msg)
           {
-            const auto i = [&]{
-              auto i = std::uint32_t{0};
-              for (auto c = 0; c < 4; ++c)
+            const auto payload = [&]
+            {
+              if (ends_with(msg->get_topic(), "/status"))
               {
-                reinterpret_cast<char*>(&i)[c] = msg->get_payload_str()[c];
+                return msg->get_payload_str();
               }
-              return i;
+              else
+              {
+                auto i = std::uint32_t{0};
+                for (auto c = 0; c < 4; ++c)
+                {
+                  reinterpret_cast<char*>(&i)[c] = msg->get_payload_str()[c];
+                }
+                return std::to_string(i);
+              }
             }();
 
             std::cout
               << msg->get_topic() << " -> "
-              << i
+              << payload
               << " [qos=" << msg->get_qos()
               << ", retained=" << std::boolalpha << msg->is_retained()
               << "]\n";

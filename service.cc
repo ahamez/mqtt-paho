@@ -48,6 +48,7 @@ main(int argc, char** argv)
   auto verify_server = false;
   auto id = std::string{};
   auto address = std::string{};
+  auto show_payload = false;
 
   auto options = cxxopts::Options{argv[0]};
   options
@@ -63,6 +64,7 @@ main(int argc, char** argv)
     ("user", "User", cxxopts::value<std::string>())
     ("password", "Password", cxxopts::value<std::string>())
     ("topics", "Topics to subscribe to", cxxopts::value<std::vector<std::string>>())
+    ("show-payload", "Show payload", cxxopts::value<bool>(show_payload)->default_value("false"))
     ;
 
   options.parse_positional({"id", "address", "topics"});
@@ -110,6 +112,7 @@ main(int argc, char** argv)
     << "Certificate: " << (args.count("crt") ? args["crt"].as<std::string>() : "N/A") << '\n'
     << "Topic: " << topic << '\n'
     << "Verify server: " << std::boolalpha << verify_server << '\n'
+    << "Show payload: " << std::boolalpha << show_payload << '\n'
     << "Subscribed topics:";
 
   for (const auto& topic : subscribed_topics)
@@ -118,7 +121,7 @@ main(int argc, char** argv)
   }
   std::cout << "\n\n";
 
-  connection_options.set_keep_alive_interval(10);
+  connection_options.set_keep_alive_interval(3600*10);
   connection_options.set_clean_session(true);
   connection_options.set_will(mqtt::will_options{
     topic + "/status",
@@ -130,7 +133,7 @@ main(int argc, char** argv)
   mqtt::client cli{address, id};
   auto cbk = callback{};
   cli.set_callback(cbk);
-  cli.set_timeout(6s);
+  cli.set_timeout(2s);
 
   while (true)
   {
@@ -139,7 +142,8 @@ main(int argc, char** argv)
       cli.connect(connection_options);
       for (const auto& topic : subscribed_topics)
       {
-        cli.subscribe(topic);
+        // cli.subscribe(topic, qos0);
+        cli.subscribe(topic, qos1);
       }
 
       cli.publish(mqtt::make_message(
@@ -151,51 +155,40 @@ main(int argc, char** argv)
 
       while (true)
       {
-        auto msg = std::make_shared<const mqtt::message>();
-        if (cli.try_consume_message_for(&msg, 1s))
+        const auto msg = cli.consume_message();
+        if (not msg)
         {
-          if (msg)
-          {
-            const auto payload = [&]
-            {
-              if (ends_with(msg->get_topic(), "/status"))
-              {
-                return msg->get_payload_str();
-              }
-              else
-              {
-                auto i = std::uint32_t{0};
-                for (auto c = 0; c < 4; ++c)
-                {
-                  reinterpret_cast<char*>(&i)[c] = msg->get_payload_str()[c];
-                }
-                return std::to_string(i);
-              }
-            }();
-
-            std::cout
-              << msg->get_topic() << " -> "
-              << payload
-              << " [qos=" << msg->get_qos()
-              << ", retained=" << std::boolalpha << msg->is_retained()
-              << "]\n";
-          }
-          else
-          {
-            std::cout << "No message\n";
-          }
+          std::cout << "No message\n";
         }
-        else
+        else if (show_payload)
         {
-          // As we can't manually send a PINGREQ with paho (is it so sure?), some activity
-          // is required to not trigger the timeout.
-          // https://www.hivemq.com/blog/mqtt-essentials-part-10-alive-client-take-over.
-          cli.publish(mqtt::make_message(
-            "s/ping",
-            std::string{"pong"},
-            qos1,
-            unretained
-          ));
+          const auto payload = [&]
+          {
+            if (ends_with(msg->get_topic(), "/status"))
+            {
+              return msg->get_payload_str();
+            }
+            else if (ends_with(msg->get_topic(), "/info"))
+            {
+              return msg->get_payload_str();
+            }
+            else
+            {
+              auto i = std::uint32_t{0};
+              for (auto c = 0; c < 4; ++c)
+              {
+                reinterpret_cast<char*>(&i)[c] = msg->get_payload_str()[c];
+              }
+              return std::to_string(i);
+            }
+          }();
+
+          std::cout
+            << msg->get_topic() << " -> "
+            << payload
+            << " [qos=" << msg->get_qos()
+            << ", retained=" << std::boolalpha << msg->is_retained()
+            << "]\n";
         }
       }
     }

@@ -173,6 +173,10 @@ main(int argc, char** argv)
             {
               return msg->get_payload_str();
             }
+            else if (ends_with(msg->get_topic(), "/!"))
+            {
+              return msg->get_payload_str();
+            }
             else
             {
               auto i = std::uint32_t{0};

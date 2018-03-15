@@ -159,6 +159,7 @@ main(int argc, char** argv)
         if (not msg)
         {
           std::cout << "No message\n";
+          break;
         }
         else if (show_payload)
         {

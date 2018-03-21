@@ -49,6 +49,7 @@ main(int argc, char** argv)
   auto id = std::string{};
   auto address = std::string{};
   auto show_payload = false;
+  auto clean_session = true;
 
   auto options = cxxopts::Options{argv[0]};
   options
@@ -65,6 +66,7 @@ main(int argc, char** argv)
     ("password", "Password", cxxopts::value<std::string>())
     ("topics", "Topics to subscribe to", cxxopts::value<std::vector<std::string>>())
     ("show-payload", "Show payload", cxxopts::value<bool>(show_payload)->default_value("false"))
+    ("clean-session", "Clean session", cxxopts::value<bool>(clean_session)->default_value("true"))
     ;
 
   options.parse_positional({"id", "address", "topics"});
@@ -113,6 +115,7 @@ main(int argc, char** argv)
     << "Topic: " << topic << '\n'
     << "Verify server: " << std::boolalpha << verify_server << '\n'
     << "Show payload: " << std::boolalpha << show_payload << '\n'
+    << "Clean session: " << std::boolalpha << clean_session << '\n'
     << "Subscribed topics:";
 
   for (const auto& topic : subscribed_topics)

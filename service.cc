@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -96,17 +97,9 @@ main(int argc, char** argv)
   }
 
   const auto topic = std::string{"s/"} + id;
-  const auto subscribed_topics = [&]
-  {
-    if (args.count("topics"))
-    {
-      return args["topics"].template as<std::vector<std::string>>();
-    }
-    else
-    {
-      return std::vector<std::string>{};
-    }
-  }();
+  const auto subscribed_topics = args.count("topics")
+    ? args["topics"].template as<std::vector<std::string>>()
+    : std::vector<std::string>{};
 
   std::cout
     << "Identifer: " << id << '\n'
@@ -125,7 +118,7 @@ main(int argc, char** argv)
   std::cout << "\n\n";
 
   connection_options.set_keep_alive_interval(3600*10);
-  connection_options.set_clean_session(true);
+  connection_options.set_clean_session(clean_session);
   connection_options.set_will(mqtt::will_options{
     topic + "/status",
     std::string{"offline"},
@@ -145,8 +138,33 @@ main(int argc, char** argv)
       cli.connect(connection_options);
       for (const auto& topic : subscribed_topics)
       {
-        // cli.subscribe(topic, qos0);
-        cli.subscribe(topic, qos1);
+        const auto comma_cit = std::find(topic.cbegin(), topic.cend(), ',');
+        if (comma_cit != topic.cend())
+        {
+          const auto topic_substr = std::string{topic.cbegin(), comma_cit};
+          const auto qos_substr = std::string{comma_cit + 1, topic.cend()};
+          const auto qos = [&]
+          {
+            if (qos_substr == "qos0")
+            {
+              return qos0;
+            }
+            else if (qos_substr == "qos1")
+            {
+              return qos1;
+            }
+            else
+            {
+              std::cerr << "Invalid QoS " << qos_substr << '\n';
+              std::exit(0);
+            }
+          }();
+          cli.subscribe(topic_substr, qos);
+        }
+        else
+        {
+          cli.subscribe(topic, qos0);
+        }
       }
 
       cli.publish(mqtt::make_message(
